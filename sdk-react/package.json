@@ -1,0 +1,36 @@
+{
+  "name": "@blackroad/sdk-react",
+  "version": "1.0.0",
+  "description": "React hooks for BlackRoad OS agents, tasks, and streaming",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist/", "src/", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BlackRoad-OS-Inc/blackroad-sdk"
+  },
+  "keywords": ["blackroad", "react", "hooks", "agents", "ai"],
+  "license": "UNLICENSED"
+}
