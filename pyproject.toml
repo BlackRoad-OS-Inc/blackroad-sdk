@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "blackroad"
+version = "0.1.0"
+description = "BlackRoad OS Python SDK — Your AI. Your Hardware. Your Rules."
+readme = "README.md"
+license = {text = "Proprietary"}
+requires-python = ">=3.10"
+authors = [{name = "BlackRoad OS, Inc.", email = "blackroad@gmail.com"}]
+keywords = ["ai", "agents", "blackroad", "llm", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+    "anyio>=4.0.0",
+]
+
+[project.optional-dependencies]
+integrations = [
+    "huggingface-hub>=0.27.0",
+    "notion-client>=2.0.0",
+    "google-api-python-client>=2.0.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-httpx>=0.33.0",
+    "ruff>=0.8.0",
+]
+
+[project.urls]
+Homepage = "https://blackroad.systems"
+Documentation = "https://docs.blackroad.io"
+Repository = "https://github.com/BlackRoad-OS-Inc/blackroad-sdk"
+
+[tool.hatch.build.targets.wheel]
+packages = ["python/blackroad"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
