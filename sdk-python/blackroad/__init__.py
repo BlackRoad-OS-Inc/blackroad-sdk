@@ -1,28 +1,25 @@
-"""
-BlackRoad Python SDK
-Official Python client for the BlackRoad API
-"""
-
-__version__ = "1.0.0"
-__author__ = "BlackRoad OS, Inc."
+"""BlackRoad Python SDK"""
 
 from .client import BlackRoadClient
-from .agents import AgentAPI
-from .tasks import TaskAPI
-from .memory import MemoryAPI
+from .async_client import AsyncBlackRoadClient
+from .types import Agent, MemoryEntry, Task, ChatResponse, HealthStatus
 from .exceptions import (
     BlackRoadError,
     AuthenticationError,
     RateLimitError,
     NotFoundError,
-    ValidationError
+    ValidationError,
 )
 
+__version__ = "1.0.0"
 __all__ = [
     "BlackRoadClient",
-    "AgentAPI",
-    "TaskAPI",
-    "MemoryAPI",
+    "AsyncBlackRoadClient",
+    "Agent",
+    "MemoryEntry",
+    "Task",
+    "ChatResponse",
+    "HealthStatus",
     "BlackRoadError",
     "AuthenticationError",
     "RateLimitError",
