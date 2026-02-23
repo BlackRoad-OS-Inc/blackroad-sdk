@@ -1,97 +1,92 @@
-/**
- * @blackroad/sdk — Streaming Client
- * Server-Sent Events (SSE) for real-time agent updates
- */
+// BlackRoad SDK — SSE Streaming Utilities
+// Helpers for consuming gateway streaming responses
 
-export type StreamEvent = 
-  | { type: 'agent_update'; agentId: string; status: string; message: string }
-  | { type: 'task_update'; taskId: string; status: string; progress: number }
-  | { type: 'memory_update'; memoryId: string; content: string }
-  | { type: 'heartbeat'; timestamp: string }
-  | { type: 'error'; message: string };
+export type StreamChunk = {
+  id: string;
+  delta: string;
+  finish_reason: string | null;
+};
 
-export type StreamHandler = (event: StreamEvent) => void;
-
-export class StreamClient {
-  private eventSource: EventSource | null = null;
-  private handlers = new Map<string, Set<StreamHandler>>();
-
-  constructor(
-    private baseUrl: string,
-    private apiKey: string
-  ) {}
-
-  connect(topics: string[] = ['*']): void {
-    const url = new URL(`${this.baseUrl}/stream`);
-    url.searchParams.set('topics', topics.join(','));
-    url.searchParams.set('token', this.apiKey);
-
-    this.eventSource = new EventSource(url.toString());
-
-    this.eventSource.onmessage = (e) => {
-      try {
-        const event = JSON.parse(e.data) as StreamEvent;
-        this.emit(event.type, event);
-        this.emit('*', event);
-      } catch {}
+/** Parse a single SSE `data:` line into a chunk or null */
+function parseChunk(line: string): StreamChunk | null {
+  if (!line.startsWith("data: ")) return null;
+  const raw = line.slice(6).trim();
+  if (raw === "[DONE]") return null;
+  try {
+    const obj = JSON.parse(raw);
+    return {
+      id: obj.id,
+      delta: obj.choices?.[0]?.delta?.content ?? "",
+      finish_reason: obj.choices?.[0]?.finish_reason ?? null,
     };
-
-    this.eventSource.onerror = () => {
-      this.emit('error', { type: 'error', message: 'Stream connection error' });
-    };
-  }
-
-  on(event: string, handler: StreamHandler): () => void {
-    if (!this.handlers.has(event)) {
-      this.handlers.set(event, new Set());
-    }
-    this.handlers.get(event)!.add(handler);
-    return () => this.handlers.get(event)?.delete(handler);
-  }
-
-  private emit(event: string, data: StreamEvent): void {
-    this.handlers.get(event)?.forEach(h => h(data));
-  }
-
-  disconnect(): void {
-    this.eventSource?.close();
-    this.eventSource = null;
+  } catch {
+    return null;
   }
 }
 
-/** Node.js SSE client (no EventSource in Node) */
-export async function* streamEvents(
-  url: string,
-  apiKey: string,
-  topics: string[] = ['*']
-): AsyncGenerator<StreamEvent> {
-  const endpoint = new URL(`${url}/stream`);
-  endpoint.searchParams.set('topics', topics.join(','));
-  
-  const res = await fetch(endpoint.toString(), {
-    headers: { Authorization: `Bearer ${apiKey}`, Accept: 'text/event-stream' },
+/** Stream a chat completion from the gateway, yielding text deltas */
+export async function* streamChat(
+  gatewayUrl: string,
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  options?: { temperature?: number; max_tokens?: number }
+): AsyncGenerator<string> {
+  const resp = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model, messages, stream: true, ...options }),
   });
 
-  if (!res.body) throw new Error('No response body');
-  
-  const reader = res.body.getReader();
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Gateway error ${resp.status}: ${err}`);
+  }
+
+  const reader = resp.body!.getReader();
   const decoder = new TextDecoder();
-  let buffer = '';
+  let buffer = "";
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    
+
     buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
 
     for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        try {
-          yield JSON.parse(line.slice(6)) as StreamEvent;
-        } catch {}
-      }
+      const chunk = parseChunk(line.trim());
+      if (chunk?.delta) yield chunk.delta;
     }
   }
+}
+
+/** Collect a full streaming response into a string */
+export async function collectStream(
+  gatewayUrl: string,
+  model: string,
+  messages: Array<{ role: string; content: string }>
+): Promise<string> {
+  const parts: string[] = [];
+  for await (const delta of streamChat(gatewayUrl, model, messages)) {
+    parts.push(delta);
+  }
+  return parts.join("");
+}
+
+/** React-friendly hook-compatible stream consumer */
+export function createStreamReader(
+  onDelta: (delta: string) => void,
+  onComplete: (full: string) => void,
+  onError: (err: Error) => void
+) {
+  let full = "";
+  return {
+    onDelta(delta: string) {
+      full += delta;
+      onDelta(delta);
+    },
+    onComplete() { onComplete(full); },
+    onError,
+  };
 }
