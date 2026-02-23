@@ -1,5 +1,7 @@
 # blackroad-sdk
 
+[![CI](https://github.com/BlackRoad-OS-Inc/blackroad-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/BlackRoad-OS-Inc/blackroad-sdk/actions/workflows/ci.yml)
+
 > BlackRoad OS Python + TypeScript SDK
 
 ## Python SDK
