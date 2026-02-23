@@ -24,9 +24,10 @@ class BlackRoadClient:
     api_url: str = API_DEFAULT
     agent_id: str = "sdk-client"
     timeout: float = 30.0
+    base_url: Optional[str] = None  # alias for gateway_url
 
     def __post_init__(self):
-        self.gateway_url = self.gateway_url or os.environ.get("BLACKROAD_GATEWAY_URL", GATEWAY_DEFAULT)
+        self.gateway_url = self.base_url or self.gateway_url or os.environ.get("BLACKROAD_GATEWAY_URL", GATEWAY_DEFAULT)
         self.api_url = self.api_url or os.environ.get("BLACKROAD_API_URL", API_DEFAULT)
         self.memory = MemoryClient(self)
         self.agents = AgentClient(self)
@@ -34,23 +35,44 @@ class BlackRoadClient:
     def _headers(self) -> dict:
         return {"X-Agent-Id": self.agent_id, "Content-Type": "application/json"}
 
-    async def health(self) -> dict:
-        """Check gateway health."""
+    async def _get(self, path: str, params: Optional[dict] = None) -> any:
+        """Internal GET helper."""
         if not HAS_HTTPX:
             raise ImportError("httpx required: pip install httpx")
         async with httpx.AsyncClient(timeout=self.timeout) as http:
-            resp = await http.get(f"{self.gateway_url}/health", headers=self._headers())
+            resp = await http.get(
+                f"{self.gateway_url}{path}",
+                params=params,
+                headers=self._headers(),
+            )
             resp.raise_for_status()
             return resp.json()
 
-    async def chat(self, message: str, agent: Optional[str] = None, **kwargs) -> str:
-        """Send a chat message through the gateway. Returns response string."""
+    async def _post(self, path: str, data: Optional[dict] = None) -> any:
+        """Internal POST helper."""
         if not HAS_HTTPX:
             raise ImportError("httpx required: pip install httpx")
+        async with httpx.AsyncClient(timeout=self.timeout) as http:
+            resp = await http.post(
+                f"{self.gateway_url}{path}",
+                json=data or {},
+                headers=self._headers(),
+            )
+            resp.raise_for_status()
+            return resp.json()
+
+    async def health(self) -> dict:
+        """Check gateway health."""
+        return await self._get("/health")
+
+    async def chat(self, message: str, agent: Optional[str] = None, **kwargs) -> str:
+        """Send a chat message through the gateway. Returns response string."""
         payload = {"message": message}
         if agent:
             payload["agent"] = agent
         payload.update(kwargs)
+        if not HAS_HTTPX:
+            raise ImportError("httpx required: pip install httpx")
         async with httpx.AsyncClient(timeout=self.timeout) as http:
             resp = await http.post(
                 f"{self.gateway_url}/chat",
@@ -63,16 +85,11 @@ class BlackRoadClient:
 
     async def completions(self, model: str, messages: list, temperature: float = 0.7) -> dict:
         """OpenAI-compatible chat completions endpoint."""
-        if not HAS_HTTPX:
-            raise ImportError("httpx required: pip install httpx")
-        async with httpx.AsyncClient(timeout=self.timeout) as http:
-            resp = await http.post(
-                f"{self.gateway_url}/v1/chat/completions",
-                json={"model": model, "messages": messages, "temperature": temperature},
-                headers=self._headers(),
-            )
-            resp.raise_for_status()
-            return resp.json()
+        return await self._post("/v1/chat/completions", {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+        })
 
     async def generate(self, model: str, prompt: str, **kwargs) -> str:
         """Generate text from a prompt."""
@@ -81,22 +98,8 @@ class BlackRoadClient:
 
     async def list_agents(self) -> list:
         """List all registered agents from the gateway."""
-        if not HAS_HTTPX:
-            raise ImportError("httpx required: pip install httpx")
-        async with httpx.AsyncClient(timeout=self.timeout) as http:
-            resp = await http.get(f"{self.gateway_url}/agents", headers=self._headers())
-            resp.raise_for_status()
-            return resp.json()
+        return await self._get("/agents")
 
     async def remember(self, key: str, value: dict) -> dict:
         """Store a memory entry via the gateway."""
-        if not HAS_HTTPX:
-            raise ImportError("httpx required: pip install httpx")
-        async with httpx.AsyncClient(timeout=self.timeout) as http:
-            resp = await http.post(
-                f"{self.gateway_url}/memory",
-                json={"key": key, "value": value},
-                headers=self._headers(),
-            )
-            resp.raise_for_status()
-            return resp.json()
+        return await self._post("/memory", {"key": key, "value": value})
