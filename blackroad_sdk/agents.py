@@ -26,22 +26,49 @@ BUILTIN_AGENTS = [
 
 class AgentClient:
     """Agent registry and coordination."""
-    
+
     def __init__(self, client: BlackRoadClient):
         self._client = client
-        self._registry = {a.id: a for a in BUILTIN_AGENTS}
-    
-    def list(self, type: Optional[str] = None, status: Optional[str] = None) -> list[Agent]:
-        agents = list(self._registry.values())
-        if type: agents = [a for a in agents if a.type == type]
-        if status: agents = [a for a in agents if a.status == status]
+        self._local = {a.id: a for a in BUILTIN_AGENTS}
+
+    async def list(self, type: Optional[str] = None, status: Optional[str] = None) -> list:
+        """List agents from the gateway (falls back to local registry)."""
+        try:
+            result = await self._client._get("/agents")
+            if isinstance(result, list):
+                return result
+        except Exception:
+            pass
+        agents = list(self._local.values())
+        if type:
+            agents = [a for a in agents if a.type == type]
+        if status:
+            agents = [a for a in agents if a.status == status]
         return agents
-    
-    def get(self, agent_id: str) -> Optional[Agent]:
-        return self._registry.get(agent_id)
-    
+
+    async def get(self, agent_id: str) -> Optional[dict]:
+        """Get an agent by ID from the gateway."""
+        try:
+            return await self._client._get(f"/agents/{agent_id}")
+        except Exception:
+            a = self._local.get(agent_id)
+            return {"id": a.id, "name": a.name, "capabilities": a.capabilities} if a else None
+
+    async def wake(self, agent_id: str) -> dict:
+        """Wake up an agent."""
+        return await self._client._post(f"/agents/{agent_id}/wake", {})
+
+    async def assign_task(self, agent_id: str, description: str, **kwargs) -> dict:
+        """Assign a task to an agent."""
+        return await self._client._post(f"/agents/{agent_id}/task", {
+            "description": description,
+            **kwargs,
+        })
+
     def find_by_capability(self, capability: str) -> list[Agent]:
-        return [a for a in self._registry.values() if capability in a.capabilities]
-    
+        """Find agents in local registry by capability."""
+        return [a for a in self._local.values() if capability in a.capabilities]
+
     def register(self, agent: Agent):
-        self._registry[agent.id] = agent
+        """Register an agent in the local registry."""
+        self._local[agent.id] = agent
