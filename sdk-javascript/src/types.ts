@@ -1,121 +1,92 @@
 /**
- * BlackRoad SDK Types
+ * TypeScript types for the BlackRoad OS SDK.
  */
 
+export type AgentStatus = "online" | "offline" | "busy" | "idle";
+export type AgentCapability =
+  | "reasoning"
+  | "routing"
+  | "compute"
+  | "analysis"
+  | "memory"
+  | "security"
+  | "creative";
+
 export interface Agent {
-  agent_id: string;
+  id: string;
   name: string;
-  type: 'ai' | 'hardware' | 'human';
-  level: 1 | 2 | 3 | 4;
-  division?: string;
-  status: 'active' | 'standby' | 'dead' | 'maintenance';
-  tasks_completed: number;
-  last_heartbeat?: string;
-  metadata?: Record<string, unknown>;
-  created_at: string;
+  type: string;
+  status: AgentStatus;
+  capabilities: AgentCapability[];
+  uptime?: number;
+  tasks_completed?: number;
+  model?: string;
+  last_seen?: string;
 }
 
-export interface Task {
-  task_id: string;
-  title: string;
-  description?: string;
-  priority: 'urgent' | 'high' | 'medium' | 'low';
-  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'failed';
-  target_level?: number;
-  target_division?: string;
-  assigned_agent?: string;
-  result?: string;
-  created_at: string;
-  assigned_at?: string;
-  completed_at?: string;
-  metadata?: Record<string, unknown>;
-}
+export type TruthState = 1 | 0 | -1;
+export type MemoryType = "fact" | "observation" | "inference" | "commitment";
 
 export interface MemoryEntry {
   hash: string;
   prev_hash: string;
-  action: string;
-  entity: string;
-  details?: string;
-  tags?: string[];
+  content: string;
+  type: MemoryType;
+  truth_state: TruthState;
   timestamp: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface ClientConfig {
-  apiKey?: string;
-  baseUrl?: string;
-  timeout?: number;
-  maxRetries?: number;
-}
-
-export interface ListOptions {
-  limit?: number;
-  offset?: number;
-}
-
-export interface AgentListOptions extends ListOptions {
-  level?: number;
-  division?: string;
-  status?: string;
-}
-
-export interface TaskListOptions extends ListOptions {
-  status?: string;
-  priority?: string;
-  division?: string;
-  assigned_agent?: string;
-}
-
-export interface MemoryQueryOptions extends ListOptions {
-  search?: string;
-  action?: string;
-  entity?: string;
+  agent?: string;
   tags?: string[];
-  since?: Date;
-  until?: Date;
 }
 
-export interface DispatchTaskOptions {
+export type TaskPriority = "low" | "medium" | "high" | "critical";
+export type TaskStatus =
+  | "available"
+  | "claimed"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export interface Task {
+  id: string;
   title: string;
-  description?: string;
-  priority?: 'urgent' | 'high' | 'medium' | 'low';
-  division?: string;
-  target_level?: number;
-  metadata?: Record<string, unknown>;
+  description: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  skills: string[];
+  assigned_to?: string;
+  posted_by: string;
+  posted_at: string;
+  completed_at?: string;
 }
 
-export interface RegisterAgentOptions {
-  name: string;
-  type?: 'ai' | 'hardware' | 'human';
-  division?: string;
-  level?: number;
-  metadata?: Record<string, unknown>;
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
 }
 
-export interface LogMemoryOptions {
-  action: string;
-  entity: string;
-  details?: string;
-  tags?: string[];
-  metadata?: Record<string, unknown>;
+export interface ChatOptions {
+  model?: string;
+  agent?: string;
+  temperature?: number;
+  maxTokens?: number;
+  stream?: boolean;
 }
 
-export interface ApiResponse<T> {
-  data: T;
-  meta?: {
-    total?: number;
-    limit?: number;
-    offset?: number;
+export interface ChatResponse {
+  id: string;
+  model: string;
+  message: ChatMessage;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
   };
 }
 
-export interface HealthStatus {
-  status: 'healthy' | 'degraded' | 'down';
-  version: string;
-  timestamp: string;
-}
-
-export interface Stats {
-  [key: string]: number | string | Record<string, unknown>;
+export interface BlackRoadClientOptions {
+  /** Gateway URL. Defaults to http://127.0.0.1:8787 */
+  gatewayUrl?: string;
+  /** API key for authenticated endpoints */
+  apiKey?: string;
+  /** Request timeout in ms. Defaults to 30000 */
+  timeout?: number;
 }
