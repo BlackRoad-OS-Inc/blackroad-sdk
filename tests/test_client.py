@@ -2,7 +2,7 @@
 import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
-from blackroad.client import BlackRoadClient
+from blackroad_sdk.client import BlackRoadClient
 
 
 @pytest.fixture
