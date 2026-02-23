@@ -1,8 +1,8 @@
 """Tests for BlackRoad Python SDK."""
 import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, patch, MagicMock
+import httpx
 from blackroad_sdk.client import BlackRoadClient
+import respx
 
 
 @pytest.fixture
@@ -14,35 +14,30 @@ def client():
 
 
 @pytest.mark.asyncio
-async def test_health(client, respx_mock):
-    respx_mock.get("http://localhost:8787/health").mock(
-        return_value=MagicMock(status_code=200, json=lambda: {"status": "ok"})
+@respx.mock
+async def test_health(client):
+    respx.get("http://localhost:8787/health").mock(
+        return_value=httpx.Response(200, json={"status": "ok"})
     )
     result = await client.health()
     assert result["status"] == "ok"
 
 
 @pytest.mark.asyncio
-async def test_chat(client, respx_mock):
-    respx_mock.post("http://localhost:8787/chat").mock(
-        return_value=MagicMock(
-            status_code=200,
-            json=lambda: {"response": "Hello from Lucidia!"},
-            raise_for_status=lambda: None,
-        )
+@respx.mock
+async def test_chat(client):
+    respx.post("http://localhost:8787/chat").mock(
+        return_value=httpx.Response(200, json={"response": "Hello from Lucidia!"})
     )
     response = await client.chat("Hello!", agent="lucidia")
     assert response == "Hello from Lucidia!"
 
 
 @pytest.mark.asyncio
-async def test_list_agents(client, respx_mock):
-    respx_mock.get("http://localhost:8787/agents").mock(
-        return_value=MagicMock(
-            status_code=200,
-            json=lambda: [{"name": "lucidia", "status": "active"}],
-            raise_for_status=lambda: None,
-        )
+@respx.mock
+async def test_list_agents(client):
+    respx.get("http://localhost:8787/agents").mock(
+        return_value=httpx.Response(200, json=[{"name": "lucidia", "status": "active"}])
     )
     agents = await client.list_agents()
     assert len(agents) == 1
@@ -50,13 +45,10 @@ async def test_list_agents(client, respx_mock):
 
 
 @pytest.mark.asyncio
-async def test_remember_and_recall(client, respx_mock):
-    respx_mock.post("http://localhost:8787/memory").mock(
-        return_value=MagicMock(
-            status_code=200,
-            json=lambda: {"key": "test-key", "ps_sha": "abc123"},
-            raise_for_status=lambda: None,
-        )
+@respx.mock
+async def test_remember_and_recall(client):
+    respx.post("http://localhost:8787/memory").mock(
+        return_value=httpx.Response(200, json={"key": "test-key", "ps_sha": "abc123"})
     )
     result = await client.remember("test-key", {"value": 42})
     assert result["key"] == "test-key"
