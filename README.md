@@ -1,79 +1,60 @@
 # blackroad-sdk
 
-> TypeScript SDK — `@blackroad/sdk` — for building on BlackRoad OS.
+> BlackRoad OS Python + TypeScript SDK
 
-[![CI](https://github.com/BlackRoad-OS-Inc/blackroad-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/BlackRoad-OS-Inc/blackroad-sdk/actions/workflows/ci.yml)
+## Python SDK
 
-## Overview
+```bash
+pip install -e .
+```
 
-The official TypeScript SDK for BlackRoad OS. Build agents, integrations, and tools that connect to the BlackRoad ecosystem.
+```python
+from blackroad_sdk import BlackRoadClient
+import asyncio
 
-## Install
+async def main():
+    client = BlackRoadClient(gateway_url="http://localhost:8787")
+    
+    # PS-SHA-infinity persistent memory
+    m = client.memory.remember("Gateway uses tokenless architecture")
+    print(f"Hash: {m.hash[:8]}  Chain length: {client.memory.chain_length}")
+    
+    # Agent registry
+    for agent in client.agents.list():
+        print(f"{agent.name}: {', '.join(agent.capabilities)}")
+    
+    # Generate text
+    text = await client.generate("qwen2.5:3b", "Describe the BlackRoad OS")
+    print(text)
+
+asyncio.run(main())
+```
+
+## TypeScript SDK
 
 ```bash
 npm install @blackroad/sdk
 ```
 
-## Quick Start
-
 ```typescript
-import { createSDK } from '@blackroad/sdk';
+import { BlackRoadClient } from '@blackroad/sdk';
 
-const sdk = createSDK({ agentId: 'my-agent' });
-
-// Memory
-await sdk.memory.remember('User prefers dark mode');
-await sdk.memory.search('user preferences');
-
-// Agents
-const agents = await sdk.agents.list({ type: 'backend' });
-
-// Coordination
-await sdk.coordination.publish('tasks', 'new', { title: 'Build feature' });
-await sdk.coordination.delegate({ taskType: 'analysis', description: '...' });
+const client = new BlackRoadClient({ gatewayUrl: 'http://localhost:8787' });
+await client.memory.remember('Gateway uses tokenless architecture');
+const agents = await client.agents.list({ type: 'reasoning' });
 ```
 
-## Structure
+## Memory System (PS-SHA∞)
 
-```
-blackroad-sdk/
-├── src/
-│   ├── index.ts          # SDK entry point + createSDK factory
-│   ├── agents/           # Agent registry & communication
-│   ├── memory/           # PS-SHA∞ memory system
-│   ├── coordination/     # Event bus, pub/sub, delegation
-│   └── types/            # TypeScript types & interfaces
-├── test/                 # Tests
-└── package.json
+Hash-chained persistent memory — tamper-evident, distributed:
+
+```python
+client.memory.remember("fact")          # truth_state=1
+client.memory.observe("observation")    # truth_state=0
+client.memory.infer("inference")        # truth_state=0
+print(client.memory.head_hash)          # chain integrity
 ```
 
-## API Reference
+## License
 
-### `sdk.memory`
-| Method | Description |
-|--------|-------------|
-| `.remember(content)` | Store a fact |
-| `.observe(content)` | Store an observation |
-| `.infer(content)` | Store an inference |
-| `.search(query)` | Search memories |
-
-### `sdk.agents`
-| Method | Description |
-|--------|-------------|
-| `.list(filter?)` | List agents |
-| `.findByCapabilities(caps)` | Find agents by skill |
-
-### `sdk.coordination`
-| Method | Description |
-|--------|-------------|
-| `.publish(topic, event, payload)` | Publish event |
-| `.delegate(task)` | Delegate task to best agent |
-| `.broadcast(message)` | Broadcast to all agents |
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
-
----
-
-© BlackRoad OS, Inc. — All rights reserved. Proprietary.
+Proprietary — BlackRoad OS, Inc. All rights reserved.
