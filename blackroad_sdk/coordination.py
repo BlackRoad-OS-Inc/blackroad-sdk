@@ -58,7 +58,7 @@ class CoordinationClient:
     
     async def find_by_skills(self, skills: list[str]) -> list[dict]:
         """Find agents with specific capabilities."""
-        return await self._client._post("/agents/find", {"skills": skills})
+        return await self._client._get("/agents/find", {"skills": ",".join(skills)})
     
     async def send_dm(self, agent_id: str, message: str, 
                       requires_response: bool = True) -> dict:
