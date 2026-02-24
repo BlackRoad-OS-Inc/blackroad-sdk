@@ -1,4 +1,5 @@
-# BlackRoad OS, Inc. — Code Owners
-# All code in this repo is owned by the BlackRoad core team
+# BlackRoad OS Inc — CODEOWNERS
+# All changes require review from org owner
+# © BlackRoad OS, Inc.
 
-* @BlackRoad-OS-Inc/core-team
+* @blackboxprogramming
