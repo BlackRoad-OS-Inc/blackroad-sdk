@@ -52,3 +52,64 @@ async def test_remember_and_recall(client):
     )
     result = await client.remember("test-key", {"value": 42})
     assert result["key"] == "test-key"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_completions(client):
+    respx.post("http://localhost:8787/v1/chat/completions").mock(
+        return_value=httpx.Response(200, json={
+            "choices": [{"message": {"content": "The answer is 42"}}]
+        })
+    )
+    result = await client.completions("qwen2.5:3b", [{"role": "user", "content": "What is 42?"}])
+    assert "choices" in result
+    assert result["choices"][0]["message"]["content"] == "The answer is 42"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_generate(client):
+    respx.post("http://localhost:8787/v1/chat/completions").mock(
+        return_value=httpx.Response(200, json={
+            "choices": [{"message": {"content": "Generated text"}}]
+        })
+    )
+    result = await client.generate("qwen2.5:3b", "Tell me about AI")
+    assert result == "Generated text"
+
+
+@pytest.mark.asyncio
+async def test_get_no_httpx(client):
+    import blackroad_sdk.client as client_module
+    original = client_module.HAS_HTTPX
+    try:
+        client_module.HAS_HTTPX = False
+        with pytest.raises(ImportError, match="httpx required"):
+            await client._get("/health")
+    finally:
+        client_module.HAS_HTTPX = original
+
+
+@pytest.mark.asyncio
+async def test_post_no_httpx(client):
+    import blackroad_sdk.client as client_module
+    original = client_module.HAS_HTTPX
+    try:
+        client_module.HAS_HTTPX = False
+        with pytest.raises(ImportError, match="httpx required"):
+            await client._post("/memory", {})
+    finally:
+        client_module.HAS_HTTPX = original
+
+
+@pytest.mark.asyncio
+async def test_chat_no_httpx(client):
+    import blackroad_sdk.client as client_module
+    original = client_module.HAS_HTTPX
+    try:
+        client_module.HAS_HTTPX = False
+        with pytest.raises(ImportError, match="httpx required"):
+            await client.chat("Hello!")
+    finally:
+        client_module.HAS_HTTPX = original
