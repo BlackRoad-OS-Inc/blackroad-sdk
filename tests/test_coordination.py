@@ -68,3 +68,42 @@ async def test_find_by_skills(coord):
         mock_get.return_value = [{"id": "agent-1", "skills": ["python", "api"]}]
         results = await coord.find_by_skills(["python", "api"])
         assert isinstance(results, list)
+
+
+@pytest.mark.asyncio
+async def test_list_agents(coord):
+    with patch.object(coord._client, '_get', new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = [{"id": "agent-1", "status": "active"}]
+        results = await coord.list_agents()
+        assert isinstance(results, list)
+        call_kwargs = mock_get.call_args[1]
+        assert call_kwargs["params"]["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_list_agents_with_type(coord):
+    with patch.object(coord._client, '_get', new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = [{"id": "agent-1", "type": "reasoning"}]
+        await coord.list_agents(agent_type="reasoning")
+        call_kwargs = mock_get.call_args[1]
+        assert call_kwargs["params"]["type"] == "reasoning"
+
+
+@pytest.mark.asyncio
+async def test_send_dm(coord):
+    with patch.object(coord._client, '_post', new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = {"delivered": True, "response": "Acknowledged"}
+        result = await coord.send_dm("lucidia-001", "Execute analysis task")
+        assert result["delivered"] is True
+        call_args = mock_post.call_args[0]
+        assert call_args[0] == "/agents/lucidia-001/message"
+        payload = call_args[1]
+        assert payload["content"] == "Execute analysis task"
+        assert payload["requires_response"] is True
+
+
+def test_attach_coordination(client):
+    from blackroad_sdk.coordination import _attach_coordination
+    coord_instance = _attach_coordination(client)
+    assert hasattr(client, "coordination")
+    assert isinstance(coord_instance, CoordinationClient)
