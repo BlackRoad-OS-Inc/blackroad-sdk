@@ -72,7 +72,7 @@ export class BlackRoadClient {
   async request<T>(
     method: string,
     endpoint: string,
-    options: { data?: Record<string, unknown>; params?: Record<string, unknown> } = {}
+    options: { data?: Record<string, unknown> | undefined; params?: Record<string, unknown> | undefined } = {}
   ): Promise<T> {
     let url = `${this.baseUrl}/${endpoint.replace(/^\//, '')}`;
 
@@ -103,7 +103,7 @@ export class BlackRoadClient {
         const response = await fetch(url, {
           method,
           headers,
-          body: options.data ? JSON.stringify(options.data) : undefined,
+          body: options.data ? JSON.stringify(options.data) : null,
           signal: controller.signal,
         });
 
@@ -131,7 +131,7 @@ export class BlackRoadClient {
           }
         }
 
-        return await response.json();
+        return await response.json() as T;
       } catch (error) {
         if (error instanceof BlackRoadError) {
           throw error;

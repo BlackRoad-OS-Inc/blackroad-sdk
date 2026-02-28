@@ -4,8 +4,8 @@
 
 export class BlackRoadError extends Error {
   code: string;
-  statusCode?: number;
-  details?: Record<string, unknown>;
+  statusCode?: number | undefined;
+  details?: Record<string, unknown> | undefined;
 
   constructor(message: string, code: string = 'UNKNOWN_ERROR', statusCode?: number) {
     super(message);
@@ -25,7 +25,7 @@ export class AuthenticationError extends BlackRoadError {
 }
 
 export class RateLimitError extends BlackRoadError {
-  retryAfter?: number;
+  retryAfter?: number | undefined;
 
   constructor(message: string = 'Rate limit exceeded', retryAfter?: number) {
     super(message, 'RATE_LIMIT', 429);
@@ -44,7 +44,7 @@ export class NotFoundError extends BlackRoadError {
 }
 
 export class ValidationError extends BlackRoadError {
-  errors?: Array<{ field: string; message: string }>;
+  errors?: Array<{ field: string; message: string }> | undefined;
 
   constructor(message: string = 'Validation failed', errors?: Array<{ field: string; message: string }>) {
     super(message, 'VALIDATION_ERROR', 422);

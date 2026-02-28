@@ -12,7 +12,7 @@ export class AgentAPI {
    * List agents with optional filters.
    */
   async list(options: AgentListOptions = {}): Promise<Agent[]> {
-    const response = await this.client.get<{ agents: Agent[] }>('/agents', options);
+    const response = await this.client.get<{ agents: Agent[] }>('/agents', options as Record<string, unknown>);
     return response.agents || [];
   }
 

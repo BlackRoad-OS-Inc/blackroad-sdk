@@ -13,18 +13,27 @@
 export { BlackRoadClient } from "./client";
 export type {
   BlackRoadClientOptions,
+  ClientConfig,
+  HealthStatus,
   Agent,
   AgentStatus,
   AgentCapability,
+  AgentListOptions,
+  RegisterAgentOptions,
   MemoryEntry,
   MemoryType,
+  MemoryQueryOptions,
+  LogMemoryOptions,
   TruthState,
   Task,
   TaskPriority,
   TaskStatus,
+  TaskListOptions,
+  DispatchTaskOptions,
   ChatMessage,
   ChatOptions,
   ChatResponse,
+  Stats,
 } from "./types";
 
 // React hooks (only available in React environments)
