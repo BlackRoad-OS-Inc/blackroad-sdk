@@ -63,7 +63,7 @@ function useFetch<T>(url: string | null, options?: RequestInit) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(url, { ...options });
+      const res = await fetch(url, { cache: "no-store", ...options });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setData(await res.json() as T);
     } catch (e) {
