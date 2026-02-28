@@ -168,6 +168,7 @@ export function useMemory(query?: string, limit = 10) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q, limit }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as { memories?: MemoryEntry[] };
       setMemories(data.memories ?? []);
     } catch (err) {
@@ -197,6 +198,7 @@ export function useTasks(status?: string) {
     try {
       const params = status ? `?status=${status}` : '';
       const res = await fetch(`${DEFAULT_BASE_URL}/v1/tasks${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as { tasks?: Task[] };
       setTasks(data.tasks ?? []);
     } catch (err) {
