@@ -33,7 +33,7 @@ export class TaskAPI {
    * List tasks with optional filters.
    */
   async list(options: TaskListOptions = {}): Promise<Task[]> {
-    const response = await this.client.get<{ tasks: Task[] }>('/tasks', options);
+    const response = await this.client.get<{ tasks: Task[] }>('/tasks', options as Record<string, unknown>);
     return response.tasks || [];
   }
 

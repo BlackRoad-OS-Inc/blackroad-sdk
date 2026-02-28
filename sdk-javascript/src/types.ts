@@ -90,3 +90,76 @@ export interface BlackRoadClientOptions {
   /** Request timeout in ms. Defaults to 30000 */
   timeout?: number;
 }
+
+export interface ClientConfig {
+  /** API key for authenticated endpoints */
+  apiKey?: string;
+  /** Base URL for the API. Defaults to https://api.blackroad.io/v1 */
+  baseUrl?: string;
+  /** Request timeout in ms. Defaults to 30000 */
+  timeout?: number;
+  /** Max retries for failed requests. Defaults to 3 */
+  maxRetries?: number;
+}
+
+export interface HealthStatus {
+  status: string;
+  uptime?: number;
+  version?: string;
+}
+
+export interface Stats {
+  total: number;
+  active?: number;
+  pending?: number;
+  completed?: number;
+}
+
+export interface AgentListOptions {
+  type?: string;
+  status?: string;
+  division?: string;
+  level?: number;
+}
+
+export interface RegisterAgentOptions {
+  name: string;
+  type?: string;
+  division?: string;
+  level?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface MemoryQueryOptions {
+  search?: string;
+  action?: string;
+  entity?: string;
+  tags?: string[];
+  since?: Date;
+  until?: Date;
+  limit?: number;
+  offset?: number;
+}
+
+export interface LogMemoryOptions {
+  action: string;
+  entity: string;
+  details?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface TaskListOptions {
+  status?: string;
+  priority?: string;
+  division?: string;
+}
+
+export interface DispatchTaskOptions {
+  title: string;
+  description?: string;
+  priority?: TaskPriority;
+  division?: string;
+  target_level?: number;
+  metadata?: Record<string, unknown>;
+}

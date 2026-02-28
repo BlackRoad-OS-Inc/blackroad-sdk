@@ -63,9 +63,9 @@ function useFetch<T>(url: string | null, options?: RequestInit) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(url, { cache: "no-store", ...options });
+      const res = await fetch(url, { ...options });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData(await res.json());
+      setData(await res.json() as T);
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
@@ -92,7 +92,7 @@ export function useAgents(gateway = DEFAULT_GATEWAY) {
 
 export function useAgent(id: string, gateway = DEFAULT_GATEWAY) {
   const { agents } = useAgents(gateway);
-  return agents.find(a => a.id === id) ?? null;
+  return agents.find((a: Agent) => a.id === id) ?? null;
 }
 
 // ── useTasks ──────────────────────────────────────────────────────────────────
@@ -201,9 +201,9 @@ export function useChat({ agent = "LUCIDIA", gateway = DEFAULT_GATEWAY }: UseCha
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  const send = useCallback(async (content: string) => {
+  const send = useCallback(async (content: string): Promise<ChatMessage | undefined> => {
     const userMsg: ChatMessage = { role: "user", content, timestamp: new Date().toISOString() };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev: ChatMessage[]) => [...prev, userMsg]);
     setLoading(true);
 
     abortRef.current?.abort();
@@ -218,20 +218,22 @@ export function useChat({ agent = "LUCIDIA", gateway = DEFAULT_GATEWAY }: UseCha
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json() as Record<string, unknown>;
+      const choices = data.choices as Array<{ message?: { content?: string } }> | undefined;
       const assistantMsg: ChatMessage = {
         role: "assistant",
-        content: data.content ?? data.choices?.[0]?.message?.content ?? "",
+        content: (data.content as string) ?? choices?.[0]?.message?.content ?? "",
         agent,
         timestamp: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages((prev: ChatMessage[]) => [...prev, assistantMsg]);
       return assistantMsg;
     } catch (e) {
       if ((e as Error).name !== "AbortError") {
         const errMsg: ChatMessage = { role: "assistant", content: "Gateway offline.", agent: "SYSTEM", timestamp: new Date().toISOString() };
-        setMessages(prev => [...prev, errMsg]);
+        setMessages((prev: ChatMessage[]) => [...prev, errMsg]);
       }
+      return undefined;
     } finally {
       setLoading(false);
     }
@@ -239,7 +241,7 @@ export function useChat({ agent = "LUCIDIA", gateway = DEFAULT_GATEWAY }: UseCha
 
   const clear = useCallback(() => setMessages([]), []);
   const setAgent = useCallback((newAgent: string) => {
-    setMessages(prev => [...prev, { role: "assistant", content: `Switched to ${newAgent}.`, agent: newAgent, timestamp: new Date().toISOString() }]);
+    setMessages((prev: ChatMessage[]) => [...prev, { role: "assistant" as const, content: `Switched to ${newAgent}.`, agent: newAgent, timestamp: new Date().toISOString() }]);
   }, []);
 
   return { messages, loading, send, clear, setAgent, currentAgent: agent };

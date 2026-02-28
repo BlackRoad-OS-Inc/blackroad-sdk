@@ -11,8 +11,8 @@
  *   }
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Agent, MemoryEntry, Task, ChatMessage } from './types';
+import { useState, useEffect, useCallback } from 'react';
+import type { Agent, MemoryEntry, Task } from './types';
 
 const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_BLACKROAD_API_URL || 'https://api.blackroad.io';
 
@@ -39,7 +39,7 @@ export function useAgents(options: UseAgentsOptions = {}) {
 
       const res = await fetch(`${DEFAULT_BASE_URL}/v1/agents?${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json() as { agents?: Agent[] };
       setAgents(data.agents ?? []);
       setError(null);
     } catch (err) {
@@ -55,6 +55,7 @@ export function useAgents(options: UseAgentsOptions = {}) {
       const id = setInterval(fetchAgents, options.refreshInterval);
       return () => clearInterval(id);
     }
+    return undefined;
   }, [fetchAgents, options.refreshInterval]);
 
   return { agents, loading, error, refetch: fetchAgents };
@@ -107,7 +108,7 @@ export function useChat(options: UseChatOptions = {}) {
     if (!content.trim()) return;
 
     const userMsg: ChatMessageLocal = { role: 'user', content, timestamp: new Date() };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev: ChatMessageLocal[]) => [...prev, userMsg]);
     setLoading(true);
     setError(null);
 
@@ -127,16 +128,17 @@ export function useChat(options: UseChatOptions = {}) {
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json() as Record<string, unknown>;
 
+      const memoryHash = data.memory_hash as string | undefined;
       const assistantMsg: ChatMessageLocal = {
         role: 'assistant',
-        content: data.response ?? '',
-        agent: data.agent ?? agentName,
+        content: (data.response as string) ?? '',
+        agent: (data.agent as string) ?? agentName,
         timestamp: new Date(),
-        memoryHash: data.memory_hash,
+        ...(memoryHash !== undefined ? { memoryHash } : {}),
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages((prev: ChatMessageLocal[]) => [...prev, assistantMsg]);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
@@ -166,7 +168,7 @@ export function useMemory(query?: string, limit = 10) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q, limit }),
       });
-      const data = await res.json();
+      const data = await res.json() as { memories?: MemoryEntry[] };
       setMemories(data.memories ?? []);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -195,7 +197,7 @@ export function useTasks(status?: string) {
     try {
       const params = status ? `?status=${status}` : '';
       const res = await fetch(`${DEFAULT_BASE_URL}/v1/tasks${params}`);
-      const data = await res.json();
+      const data = await res.json() as { tasks?: Task[] };
       setTasks(data.tasks ?? []);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
