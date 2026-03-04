@@ -1,0 +1,29 @@
+# BlackRoad OS — Cloudflare Workers Gateway
+# Deploy: wrangler deploy
+# Dev:    wrangler dev
+
+name = "blackroad-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Workers CPU limit: 30 seconds (Paid plan) vs 10 ms (Free plan)
+# This worker routes long-running tasks to the upstream API and
+# returns streaming/async results to SDK clients.
+
+[vars]
+# Override in Cloudflare dashboard or via wrangler secret put BLACKROAD_API_URL
+BLACKROAD_API_URL = ""
+
+# KV namespace for response caching (create with: wrangler kv:namespace create BLACKROAD_CACHE)
+# [[kv_namespaces]]
+# binding = "BLACKROAD_CACHE"
+# id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[env.staging]
+name = "blackroad-gateway-staging"
+vars = { BLACKROAD_API_URL = "" }
+
+[env.production]
+name = "blackroad-gateway"
+vars = { BLACKROAD_API_URL = "" }

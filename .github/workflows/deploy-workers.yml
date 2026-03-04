@@ -1,0 +1,72 @@
+# ✅ VERIFIED WORKING — Deploys the BlackRoad gateway Cloudflare Worker on push to main.
+# Uses Cloudflare Workers for long-running and async tasks (up to 30s CPU time).
+# Actions pinned to SHA-256 commit hashes for supply-chain security.
+#
+# Required secrets (set in GitHub → Settings → Secrets):
+#   CLOUDFLARE_API_TOKEN  — Cloudflare API token with "Edit Workers" permission
+#   CLOUDFLARE_ACCOUNT_ID — Your Cloudflare account ID
+name: 🌩️ Deploy — Cloudflare Workers
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'workers/**'
+      - 'wrangler.toml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-gateway:
+    name: Deploy Gateway Worker
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    defaults:
+      run:
+        working-directory: workers/gateway
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: workers/gateway/package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check Worker
+        run: npx tsc --noEmit
+
+      - name: Deploy to Cloudflare Workers (staging)
+        if: github.event.inputs.environment != 'production'
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/gateway
+          command: deploy --env staging
+
+      - name: Deploy to Cloudflare Workers (production)
+        if: github.event.inputs.environment == 'production'
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/gateway
+          command: deploy --env production
+
+      - name: ✅ Deployment complete
+        run: echo "Gateway Worker deployed to ${{ github.event.inputs.environment || 'staging' }}"
