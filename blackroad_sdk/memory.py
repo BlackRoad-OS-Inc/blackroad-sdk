@@ -2,7 +2,7 @@
 from __future__ import annotations
 import hashlib, time, json
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -105,7 +105,7 @@ class MemoryClient:
             hash=h, prev_hash=self._prev_hash,
             key=key, content=content, type=type,
             truth_state=truth_state,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             agent_id=self._client.agent_id,
         )
         self._chain.append(m)

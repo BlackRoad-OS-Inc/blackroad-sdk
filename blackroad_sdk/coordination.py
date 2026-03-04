@@ -4,8 +4,7 @@ Task delegation, broadcasts, and agent registry queries
 """
 from __future__ import annotations
 import uuid
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timezone
 from .client import BlackRoadClient
 
 
@@ -22,7 +21,7 @@ class CoordinationClient:
             "topic": topic,
             "type": event_type,
             "payload": payload,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         }
         response = await self._client._post("/coordination/publish", event)
         return response
@@ -36,7 +35,7 @@ class CoordinationClient:
             "description": description, 
             "required_skills": required_skills or [],
             "priority": priority,
-            "submitted_at": datetime.utcnow().isoformat() + "Z"
+            "submitted_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         })
     
     async def broadcast(self, message: str, channel: str = "all") -> dict:
@@ -45,7 +44,7 @@ class CoordinationClient:
             "message": message,
             "channel": channel,
             "from": self._client.agent_id or "sdk-client",
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         })
     
     async def list_agents(self, agent_type: str = None, 
